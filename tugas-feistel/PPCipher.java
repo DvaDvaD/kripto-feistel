@@ -6,19 +6,13 @@ class PPCipher {
   private static final String IV = "abcd";
 
   public static int textToInt(String text) {
-    if (text.startsWith("0x")) {
-      // Jika input berupa hexadecimal
-      return Integer.parseInt(text.substring(2), 16);
-    } else {
-      // Jika input berupa string biasa
-      StringBuilder binaryString = new StringBuilder();
-      for (char c : text.toCharArray()) {
-        int asciiValue = (int) c;
-        String binaryChar = String.format("%8s", Integer.toUnsignedString(asciiValue, 2)).replace(' ', '0');
-        binaryString.append(binaryChar);
-      }
-      return Integer.parseUnsignedInt(binaryString.toString(), 2);
+    StringBuilder binaryString = new StringBuilder();
+    for (char c : text.toCharArray()) {
+      int asciiValue = (int) c;
+      String binaryChar = String.format("%8s", Integer.toUnsignedString(asciiValue, 2)).replace(' ', '0');
+      binaryString.append(binaryChar);
     }
+    return Integer.parseUnsignedInt(binaryString.toString(), 2);
   }
 
   public static String intToAsciiString(int number) {
@@ -111,7 +105,15 @@ class PPCipher {
         String inputBlock = block;
         int plainText = feistelCipher(key, intToAsciiString(Integer.parseUnsignedInt(block, 16)), mode);
         String plainTextAscii = intToAsciiString(plainText);
-        String decryptedBlock = intToAsciiString(textToInt(plainTextAscii) ^ textToInt(prevBlock));
+
+        String decryptedBlock;
+
+        if (prevBlock.equals(IV)) {
+          decryptedBlock = intToAsciiString(textToInt(plainTextAscii) ^ textToInt(IV));
+        } else {
+          decryptedBlock = intToAsciiString(
+              textToInt(plainTextAscii) ^ textToInt(intToAsciiString(Integer.parseUnsignedInt(prevBlock, 16))));
+        }
 
         prevBlock = inputBlock;
 
@@ -153,6 +155,11 @@ class PPCipher {
 
     if (key.length() != 4) {
       System.out.println("Key must be 4 characters long");
+      return;
+    }
+
+    if (text.length() == 0) {
+      System.out.println("Text must not be empty");
       return;
     }
 
