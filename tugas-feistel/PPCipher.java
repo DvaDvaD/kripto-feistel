@@ -5,6 +5,28 @@ class PPCipher {
 
   private static final String IV = "abcd";
 
+  private static final int IRREDUCIBLE_POLYNOMIAL = 0x1000b; // x^16 + x^12 + x^5 + x^3 + 1
+
+  public static int gfMul(int a, int b) {
+    int product = 0;
+    while (b != 0) {
+      if ((b & 1) != 0) {
+        product ^= a;
+      }
+      a = gfShiftLeft(a);
+      b >>>= 1;
+    }
+    return product;
+  }
+
+  private static int gfShiftLeft(int a) {
+    if ((a & 0x8000) != 0) {
+      return (a << 1) ^ IRREDUCIBLE_POLYNOMIAL;
+    } else {
+      return a << 1;
+    }
+  }
+
   public static int textToInt(String text) {
     StringBuilder binaryString = new StringBuilder();
     for (char c : text.toCharArray()) {
@@ -28,12 +50,24 @@ class PPCipher {
     return result.toString();
   }
 
+  private static int someComplexFunction(int x, int round) {
+    int a = x << 9;
+    int b = x >> 7;
+    int c = x ^ round;
+    int d = c ^ (x << 11);
+    int e = d ^ (b << 3);
+    int result = a ^ e;
+    return result;
+  }
+
   public static int[] keyScheduling(int key) {
     int[] subkeys = new int[NUMBER_OF_ROUNDS];
 
-    for (int i = 0; i < NUMBER_OF_ROUNDS; i++) {
-      int rightShiftedKey = key >> i + 1;
-      subkeys[i] = rightShiftedKey & 0xffff;
+    subkeys[0] = key & 0xffff;
+
+    // Generate the remaining subkeys using a complex function
+    for (int i = 1; i < NUMBER_OF_ROUNDS; i++) {
+      subkeys[i] = ((subkeys[i - 1] ^ someComplexFunction(subkeys[i - 1], i)) + i) & 0xffff;
     }
 
     return subkeys;
@@ -90,7 +124,9 @@ class PPCipher {
   }
 
   public static int fFunction(int rightBlock, int subkey) {
-    return rightBlock ^ subkey;
+    int result = gfMul(gfMul((rightBlock ^ subkey), gfMul(rightBlock, subkey)), subkey);
+
+    return result;
   }
 
   public static String cbcMode(String key, String text, String mode) {
