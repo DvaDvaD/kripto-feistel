@@ -129,7 +129,7 @@ class PPCipher {
 
         String inputBlock = intToAsciiString(textToInt(block) ^ textToInt(prevBlock));
         int cipherText = feistelCipher(key, inputBlock, mode);
-        String cipherTextHex = Integer.toHexString(cipherText);
+        String cipherTextHex = String.format("%8s", Integer.toHexString(cipherText)).replace(" ", "0");
         String cipherTextAscii = intToAsciiString(cipherText);
 
         prevBlock = cipherTextAscii;
