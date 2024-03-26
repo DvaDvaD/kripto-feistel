@@ -3,9 +3,9 @@ import java.util.Scanner;
 class PPCipher {
   private static final int NUMBER_OF_ROUNDS = 16;
 
-  private static final String IV = "abcd";
+  private static String IV;
 
-  private static final int IRREDUCIBLE_POLYNOMIAL = 0x1000b; // x^16 + x^12 + x^5 + x^3 + 1
+  private static final int IRREDUCIBLE_POLYNOMIAL = 0x11025; // x^16 + x^12 + x^5 + x^3 + 1
 
   public static int gfMul(int a, int b) {
     int product = 0;
@@ -193,23 +193,34 @@ class PPCipher {
     System.out.print("Enter text: ");
     String text = scanner.nextLine();
 
+    if (text.length() == 0) {
+      System.out.println("Text must not be empty");
+      scanner.close();
+      return;
+    }
+
     System.out.print("Enter key (4 chars): ");
     String key = scanner.nextLine();
+
+    if (key.length() != 4) {
+      System.out.println("Key must be 4 characters long");
+      scanner.close();
+      return;
+    }
+
+    System.out.print("Enter initialization vector (4 chars): ");
+    IV = scanner.nextLine();
+
+    if (IV.length() != 4) {
+      System.out.println("IV must be 4 characters long");
+      scanner.close();
+      return;
+    }
 
     System.out.print("Enter mode, default is encrypt (encrypt/decrypt): ");
     String mode = scanner.nextLine();
 
     scanner.close();
-
-    if (key.length() != 4) {
-      System.out.println("Key must be 4 characters long");
-      return;
-    }
-
-    if (text.length() == 0) {
-      System.out.println("Text must not be empty");
-      return;
-    }
 
     String result = cbcMode(key, text, mode);
     System.out.println("Result: " + result);
