@@ -9,22 +9,33 @@ class PPCipher {
 
   public static int gfMul(int a, int b) {
     int product = 0;
-    while (b != 0) {
-      if ((b & 1) != 0) {
-        product ^= a;
+
+    String binaryB = Integer.toUnsignedString(b, 2);
+
+    for (int i = binaryB.length() - 1; i >= 0; i--) {
+      if (binaryB.charAt(i) == '1') {
+        product = product ^ a;
       }
-      a = gfShiftLeft(a);
-      b >>>= 1;
+      a <<= 1;
     }
-    return product;
+
+    int productMod = polyModulo(product, IRREDUCIBLE_POLYNOMIAL);
+
+    return productMod;
   }
 
-  private static int gfShiftLeft(int a) {
-    if ((a & 0x8000) != 0) {
-      return (a << 1) ^ IRREDUCIBLE_POLYNOMIAL;
-    } else {
-      return a << 1;
+  public static int polyModulo(int poly, int mod) {
+    int polyLength = Integer.toUnsignedString(poly, 2).length();
+    int modLength = Integer.toUnsignedString(mod, 2).length();
+
+    while (polyLength >= modLength) {
+      int shift = polyLength - modLength;
+      int modShift = mod << shift;
+      poly = poly ^ modShift;
+      polyLength = Integer.toUnsignedString(poly, 2).length();
     }
+
+    return poly;
   }
 
   public static int textToInt(String text) {
@@ -68,6 +79,7 @@ class PPCipher {
     // Generate the remaining subkeys using a complex function
     for (int i = 1; i < NUMBER_OF_ROUNDS; i++) {
       subkeys[i] = ((subkeys[i - 1] ^ someComplexFunction(subkeys[i - 1], i)) + i) & 0xffff;
+
     }
 
     return subkeys;
