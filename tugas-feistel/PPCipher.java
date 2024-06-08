@@ -7,6 +7,9 @@ class PPCipher {
 
   private static final int IRREDUCIBLE_POLYNOMIAL = 0x11025; // x^16 + x^12 + x^5 + x^3 + 1
 
+  private static final int opad = 0x36;
+  private static final int ipad = 0x5c;
+
   public static int gfMul(int a, int b) {
     int product = 0;
 
@@ -188,6 +191,54 @@ class PPCipher {
     return result.toString();
   }
 
+  public static int hashFunction(String input) {
+    // Hash function using block size of 16 bits
+    int hash = 0;
+
+    // Split input into blocks of 16 bits
+    String[] blocks = input.split("(?<=\\G.{4})");
+
+    // XOR each block with the hash
+    for (String block : blocks) {
+      hash = hash ^ Integer.parseUnsignedInt(block, 16);
+    }
+
+    return hash;
+  }
+
+  public static String HMAC(int key, String text) {
+    String result = "";
+
+    // Pad key if it's less than HMAC_BLOCK_SIZE with 0's
+    String paddedKey = String.format("%16s", Integer.toUnsignedString(key, 2)).replace(' ', '0');
+
+    // XOR paddedKey with ipad
+    int ipadKey = Integer.parseUnsignedInt(paddedKey, 2) ^ ipad;
+
+    // XOR paddedKey with opad
+    int opadKey = Integer.parseUnsignedInt(paddedKey, 2) ^ opad;
+
+    // Compute inner hash
+    int innerHash = hashFunction(Integer.toHexString(ipadKey) + text);
+
+    // Compute outer hash
+    int outerHash = hashFunction(Integer.toHexString(opadKey) + Integer.toHexString(innerHash));
+
+    // Convert outer hash to hexadecimal including leading zeros
+    result = String.format("%4s",Integer.toHexString(outerHash)).replace(' ', '0');
+
+    return result;
+  }
+
+  public static boolean verifyHMAC(int key, String text, String hmac) {
+    String computedHMAC = HMAC(key, text);
+
+    System.out.println("Computed HMAC: " + computedHMAC);
+    System.out.println("Attached HMAC: " + hmac);
+
+    return computedHMAC.equals(hmac);
+  }
+
   public static void main(String[] args) {
     Scanner scanner = new Scanner(System.in);
     System.out.print("Enter text: ");
@@ -220,9 +271,27 @@ class PPCipher {
     System.out.print("Enter mode, default is encrypt (encrypt/decrypt): ");
     String mode = scanner.nextLine();
 
-    scanner.close();
-
     String result = cbcMode(key, text, mode);
     System.out.println("Result: " + result);
+    
+    System.out.print("Enter key for HMAC (<= 2 chars): ");
+    String hmacKey = scanner.nextLine();
+
+    scanner.close();
+
+    if (!(hmacKey.length() <= 2)) {
+      System.out.println("HMAC key must be less than or equal to 2 characters long");
+      scanner.close();
+      return;
+    }
+
+    String hmacResult = HMAC(textToInt(hmacKey), result);
+    System.out.println("HMAC: " + hmacResult);
+
+    System.out.println("Final result: " + result + "." + hmacResult);
+
+    // Verify the HMAC
+    boolean hmacVerification = verifyHMAC(textToInt(hmacKey), result, hmacResult);
+    System.out.println("HMAC verification: " + hmacVerification);
   }
 }
